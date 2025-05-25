@@ -18,7 +18,8 @@ statusRed = None
 statusBlue = None
 
 #defining fighter1
-
+def pathfind(name):
+    return ("./Assets/"+name+".png")
 
 class Fighter(pygame.sprite.Sprite):
 
@@ -31,8 +32,8 @@ class Fighter(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
 
         #image and collision
-
-        self.spritesheet = pygame.image.load(spritesheet)
+        self.spritesheet = pathfind(spritesheet)
+        self.spritesheet = pygame.image.load(self.spritesheet)
         self.id = id
         self.framesLeft = []
         self.framesRight = []
@@ -188,7 +189,7 @@ class Fighter1(Fighter):
 
     def __init__(self, pos, color,id):
 
-        Fighter.__init__(self, pos, ("gunslinger" + color + ".png"),id)
+        Fighter.__init__(self, pos, "gunslinger"+color,id)
         #image and collision
 
         self.timer = 0
@@ -233,7 +234,7 @@ class Fighter1(Fighter):
 class Fighter2(Fighter):
 
     def __init__(self, pos, color,id):
-        Fighter.__init__(self, pos, ("knight" + color + ".png"),id)
+        Fighter.__init__(self, pos, "knight"+color,id)
 
         #image and collision
 
@@ -277,7 +278,7 @@ class Fighter2(Fighter):
 class Fighter3(Fighter):
 
     def __init__(self, pos, color,id):
-        Fighter.__init__(self, pos, ("skelebomber" + color + ".png"),id)
+        Fighter.__init__(self, pos, "skelebomber"+color,id)
 
         self.timer = 0
         self.dropBomb = False
@@ -352,7 +353,7 @@ class Fighter3(Fighter):
 class Fighter4(Fighter):
 
     def __init__(self, pos, color,id):
-        Fighter.__init__(self, pos, ("dynaminer" + color + ".png"),id)
+        Fighter.__init__(self, pos, "dynaminer"+color,id)
 
         self.timer = 0
         self.cooldown = 30
@@ -410,7 +411,7 @@ class Fighter4(Fighter):
 class Fighter5(Fighter):
 
     def __init__(self, pos, color,id):
-        Fighter.__init__(self, pos, ("alchemist" + color + ".png"),id)
+        Fighter.__init__(self, pos, "alchemist"+color,id)
 
         self.timer = 0
         self.cooldown = 35
@@ -465,7 +466,7 @@ class Potion(pygame.sprite.Sprite):
 
     def __init__(self, side, pos,player):
         pygame.sprite.Sprite.__init__(self)
-        self.spritesheet = pygame.image.load("potion.png")
+        self.spritesheet = pygame.image.load(pathfind("potion"))
         self.frames = []
         for i in range(8):
             self.frames.append(self.spritesheet.subsurface(
@@ -515,7 +516,7 @@ class Poison(pygame.sprite.Sprite):
 
     def __init__(self, pos,player):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("poison.png")
+        self.image = pygame.image.load(pathfind("poison"))
         self.image = pygame.transform.scale(self.image, (100, 100))
         self.rect = self.image.get_rect()
         self.rect.center = pos
@@ -552,11 +553,11 @@ class Bullet(pygame.sprite.Sprite):
 
         if side == "right":
             self.speed = 10
-            self.image = pygame.image.load("bulletRight.png")
+            self.image = pygame.image.load(pathfind("bulletLeft"))
             self.knockback = (7, -4)
         else:
             self.speed = -10
-            self.image = pygame.image.load("bulletLeft.png")
+            self.image = pygame.image.load(pathfind("bulletRight"))
             self.knockback = (-7, -4)
 
         self.rect = self.image.get_rect()
@@ -582,7 +583,7 @@ class Bomb(pygame.sprite.Sprite):
 
     def __init__(self, pos,player):
         pygame.sprite.Sprite.__init__(self)
-        self.spritesheet = pygame.image.load("bomb.png")
+        self.spritesheet = pygame.image.load(pathfind("bomb"))
         self.frames = []
         for i in range(27):
             self.frames.append(self.spritesheet.subsurface(
@@ -611,7 +612,7 @@ class RemoteBomb(pygame.sprite.Sprite):
 
     def __init__(self, pos,player):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("dynamite.png")
+        self.image = pygame.image.load(pathfind("dynamite"))
         pygame.transform.scale(self.image, (40, 40))
         self.rect = self.image.get_rect()
         x, y = pos
@@ -632,7 +633,7 @@ class Explosion(pygame.sprite.Sprite):
 
     def __init__(self, pos, size, damage,player):
         pygame.sprite.Sprite.__init__(self)
-        self.spritesheet = pygame.image.load("explosion.png")
+        self.spritesheet = pygame.image.load(pathfind("explosion"))
         self.frames = []
         for i in range(12):
             self.frames.append(self.spritesheet.subsurface(
@@ -666,7 +667,7 @@ class Pellet(pygame.sprite.Sprite):
 
     def __init__(self, pos, side,player):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("pellet.png")
+        self.image = pygame.image.load(pathfind("pellet"))
         self.image = pygame.transform.scale(self.image, (20, 20))
         self.rect = self.image.get_rect()
         self.rect.center = pos
@@ -710,7 +711,7 @@ class Sword(pygame.sprite.Sprite):
 
     def __init__(self, pos, side,player):
         pygame.sprite.Sprite.__init__(self)
-        self.spritesheet = pygame.image.load("sword.png")
+        self.spritesheet = pygame.image.load(pathfind("sword",))
         self.frames = []
         self.swordSide = side
         self.player = player
@@ -766,7 +767,7 @@ class Platform(pygame.sprite.Sprite):
         y,
     ):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("platform.png")
+        self.image = pygame.image.load(pathfind("platform"))
         self.image = pygame.transform.scale(self.image, (200, 25))
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
@@ -786,7 +787,7 @@ class Button:
         self.width = width
         self.color = color
         self.height = height
-        self.sysfont = pygame.font.Font('RobotoSlab-Regular.ttf', 20)
+        self.sysfont = pygame.font.Font('./Assets/RobotoSlab-Regular.ttf', 20)
         self.renderedText = self.sysfont.render(self.text, True, ((0, 0, 0)))
         self.bg = (225,225,225)
         self.image = pygame.Surface((self.width, self.height))
@@ -816,7 +817,7 @@ class Button:
 class Healthbar():
 
     def __init__(self, health, spritesheet):
-        self.spritesheet = pygame.image.load("healthbar.png")
+        self.spritesheet = pygame.image.load(pathfind("healthbar"))
         self.frames = []
 
         for i in range(50):
@@ -866,7 +867,7 @@ def startscreenCreate(x, y, width, height):
 
 
 def text(textmessage, x, y):
-    font = pygame.font.Font('RobotoSlab-Bold.ttf', 32)
+    font = pygame.font.Font('./Assets/RobotoSlab-Bold.ttf', 32)
     img = font.render(textmessage, True, (0, 0, 0))
     rect= img.get_rect()
     rect.center = (x,y)
@@ -1046,7 +1047,7 @@ allPlatforms.add(Platform(900, 550))
 
 
 
-bg = pygame.image.load("background.jpg")
+bg = pygame.image.load("./Assets/background.jpg")
 
 allButtons, buttonlistBlue, buttonlistRed = startscreenCreate(
     WIDTH - 200, HEIGHT - 200, 200, 50)
