@@ -4,7 +4,7 @@ import pygame
 import random
 import math
 from pygame.locals import *
-from typing import Final, final
+import time
 #initializing game window
 pygame.init()
 HEIGHT = 700
@@ -12,10 +12,8 @@ WIDTH = 1000
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen.fill((255, 255, 255))
 clock = pygame.time.Clock()
-startplayBlue = False
-startplayRed = False
-statusRed = None
-statusBlue = None
+
+
 
 #defining fighter1
 def pathfind(name):
@@ -63,7 +61,7 @@ class Fighter(pygame.sprite.Sprite):
         #Setting the health value of the fighter
         self.health = 100
         self.dead = False
-        self.side = "right"
+        
         self.invincible = False
         self.invincibleTimer = 0
         self.regenTimer = 0
@@ -76,14 +74,16 @@ class Fighter(pygame.sprite.Sprite):
             self.health -= damage
             print(self.id + ": " + str(self.health))
             if self.health <= 0:
-                self.kill()
+                
                 self.dead = True
             self.invincible = True
             self.invincibleTimer = 0
             x, y = knockback
             self.xSpeed += x
             self.ySpeed += y
-
+        if self.health <= 0:
+            self.dead = True
+        
     def moveLeft(self):
         #changing xspeed
         #if top speed is reached, nothing happens
@@ -282,7 +282,7 @@ class Fighter3(Fighter):
 
         self.timer = 0
         self.dropBomb = False
-        self.cooldown = 80
+        self.cooldown = 60
 
         self.bombs = []
 
@@ -530,11 +530,7 @@ class Poison(pygame.sprite.Sprite):
         self.damage = 1
         self.knockback = (0, 0)
         self.player = player
-    def poisoning(self):
-        if self.rangeKill:
-            self.image = pygame.Surface((10, 10))
-            self.image.fill("purple")
-            self.rangeKill = False
+    
 
     def update(self, filler1):
         self.timer += 1
@@ -553,11 +549,11 @@ class Bullet(pygame.sprite.Sprite):
 
         if side == "right":
             self.speed = 10
-            self.image = pygame.image.load(pathfind("bulletLeft"))
+            self.image = pygame.image.load(pathfind("bulletRight"))
             self.knockback = (7, -4)
         else:
             self.speed = -10
-            self.image = pygame.image.load(pathfind("bulletRight"))
+            self.image = pygame.image.load(pathfind("bulletLeft"))
             self.knockback = (-7, -4)
 
         self.rect = self.image.get_rect()
@@ -594,13 +590,13 @@ class Bomb(pygame.sprite.Sprite):
         x, y = pos
         self.rect.center = pos
         self.timer = 0
-        self.lifetime = 81
+        self.lifetime = 27
         self.dead = False
         self.frame = 0
         self.player = player
         self.mask  = pygame.mask.from_surface(self.image)
     def update(self, filler1):
-        self.image = self.frames[self.frame // 3]
+        self.image = self.frames[self.frame]
         self.frame += 1
         self.timer += 1
         if self.timer >= self.lifetime:
@@ -792,7 +788,8 @@ class Button:
         self.bg = (225,225,225)
         self.image = pygame.Surface((self.width, self.height))
         self.image.fill((255, 255, 255))
-        
+        self.image.set_colorkey((255, 255, 255))
+
         pygame.draw.rect(self.image,self.bg,(0,0,self.width,self.height),0,20)
         pygame.draw.rect(self.image,self.color,(0,0,self.width,self.height),5,20)
         self.rect = self.image.get_rect()
@@ -803,7 +800,7 @@ class Button:
 
     def click(self, mousePosition):
         return self.rect.collidepoint(mousePosition)
-    def update(self):
+    def update(self, mousePosition):
         self.image.fill((255, 255, 255))
 
         pygame.draw.rect(self.image,self.bg,(0,0,self.width,self.height),0,20)
@@ -812,7 +809,8 @@ class Button:
         textPos = self.renderedText.get_rect()
         textPos = ((self.rect.width-textPos.width)/2), (self.rect.height-textPos.height)/2
         self.image.blit(self.renderedText, textPos )
-        
+        screen.blit(self.image,self.rect)
+        return self.click(mousePosition)
 
 class Healthbar():
 
@@ -865,10 +863,48 @@ def startscreenCreate(x, y, width, height):
 
     return allButtons, buttonlistBlue, buttonlistRed
 
+def readyScreen():
+    startButton = Button("Start Game","green",500,500,400,100)
+    while True:
+        text("Player 1 controls",200,200,40,"white")
+        text("W: Jump",200,250,20,"white")
+        text("A: Move Left",200,275,20,"white")
+        text("D: Move Right",200,300,20,"white")
+        text("S: Attack",200,325,20,"white")
+        text("Player 2 controls",WIDTH-200,200,40,"white")
+        text("Up: Jump",WIDTH-200,250,20,"white")
+        text("Left: Move Left",WIDTH-200,275,20,"white")
+        text("Right: Move Right",WIDTH-200,300,20,"white")
+        text("Down: Attack",WIDTH-200,325,20,"white")
+        for event in pygame.event.get():
+            #quit program
+            if event.type == pygame.QUIT:
+                run = False
+        if startButton.update(
+                pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
+            break
+        pygame.display.flip()
+def endLoop(player):
+    end = False
+    restartButton = Button("Restart","green",500,450,200,50)
+    exitButton = Button("Exit","red",500,550,200,50)
+    while not end:
+        for event in pygame.event.get():
+            #quit program
+            if event.type == pygame.QUIT:
+                run = False
+        text(player.id+ " has won the match!",WIDTH/2,HEIGHT/2,40,"white")
+        if restartButton.update(
+                pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
+            return True
+        if exitButton.update(
+                pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
+            return False
+        pygame.display.flip()
 
-def text(textmessage, x, y):
-    font = pygame.font.Font('./Assets/RobotoSlab-Bold.ttf', 32)
-    img = font.render(textmessage, True, (0, 0, 0))
+def text(textmessage, x, y,size,color):
+    font = pygame.font.Font('./Assets/RobotoSlab-Bold.ttf', size)
+    img = font.render(textmessage, True, color)
     rect= img.get_rect()
     rect.center = (x,y)
     screen.blit(img,rect )
@@ -877,74 +913,7 @@ def text(textmessage, x, y):
 #making player1
 
 #i moved this code to a lower place to make it more organized
-"""allButtons, buttonlistBlue, buttonlistRed = startscreenCreate(
-    WIDTH - 200, HEIGHT - 200, 200, 50)
-startButton = Button("Start", ((0, 255, 0)), WIDTH / 2, HEIGHT - 100, 200, 50)
-"""
-#
-#
-#None of this is working because the if staments will only check the state of the buttons for one frame before passing on
-#Yuo need to put it in a while loop that checks the state of the buttons every frame
-#What i will do is i will pass the playerStatus after the inital for loop has finished.
-#
-"""if buttonlistBlue[0].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type1list.append(Fighter1((500, 500), "cowboyBlue.png"))
-    allSprites.add(type1list[-1])
-    allPlayers["player1"] = type1list[-1]
-    
-elif buttonlistBlue[1].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type2list.append(Fighter2((500, 500),
-                              "knightBlue.png"))  #NEED TO CHANGE TO KNIGHT
-    allSprites.add(type2list[-1])
-    allPlayers["player1"] = type2list[-1]
-elif buttonlistBlue[2].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type3list.append(Fighter3((500, 500),
-                              "skeletonBlue.png"))  #CHANGE TO SKELETON
-    allSprites.add(type3list[-1])
-    allPlayers["player1"] = type3list[-1]
-    statusBlue = "Fighter3"
-elif buttonlistBlue[3].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type4list.append(Fighter4((500, 500), "minerBlue.png"))
-    allSprites.add(type4list[-1])
-    allPlayers["player1"] = type4list[-1]
-elif buttonlistBlue[4].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type5list.append(Fighter5((500, 500), "wizardBlue.png"))
-    allSprites.add(type5list[-1])
-    allPlayers["player1"] = type5list[-1]
 
-if buttonlistRed[0].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type1list.append(Fighter1((500, 500), "cowboyRed.png"))
-    allSprites.add(type1list[-1])
-    allPlayers["player2"] = type1list[-1]
-elif buttonlistRed[1].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type2list.append(Fighter2((500, 500),
-                              "knightRed.png"))  #NEED TO CHANGE TO KNIGHT
-    allSprites.add(type2list[-1])
-    allPlayers["player2"] = type2list[-1]
-elif buttonlistRed[2].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type3list.append(Fighter3((500, 500),
-                              "skeletonRed.png"))  #CHANGE TO SKELETON
-    allSprites.add(type3list[-1])
-    allPlayers["player2"] = type3list[-1]
-elif buttonlistRed[3].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type4list.append(Fighter4((500, 500), "minerRed.png"))
-    allSprites.add(type4list[-1])
-    allPlayers["player2"] = type4list[-1]
-elif buttonlistRed[4].click(
-        pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-    type5list.append(Fighter5((500, 500), "wizardRed.png"))
-    allSprites.add(type5list[-1])
-    allPlayers["player2"] = type5list[-1]
-"""
 
 #INSIDE OF THE GAME LOOP
 
@@ -952,6 +921,19 @@ elif buttonlistRed[4].click(
 def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
 
     run = True
+    winner = None
+    for i in range (5):
+        for event in pygame.event.get():
+            #quit program
+            if event.type == pygame.QUIT:
+                run = False
+        screen.blit(bg, (0, 0))
+        allPlayers.draw(screen)
+        allAttacks.draw(screen)
+        allPlatforms.draw(screen)
+        text(str(5-i),500,350,50,"white")
+        time.sleep(1)
+        pygame.display.flip()
     while run:
         screen.blit(bg, (0, 0))
 
@@ -959,8 +941,10 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
 
         #keyboard handler
         
-
+        
+        
         #collision handler
+            
 
         
         for player in allPlayers:
@@ -982,10 +966,13 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
                     player.jump()
                 if keys[pygame.K_s]:
                     player.attack(allAttacks)
+            
             if player.dead:
+                
                 print(player.id + " is dead")
                 player.kill()
                 players.remove(player.id)
+                
             for attack in pygame.sprite.spritecollide(player, allAttacks,False,pygame.sprite.collide_mask):
                 #collision good :)
                 if player != attack.player:
@@ -1009,8 +996,13 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
             if player.id == "player2":
                 screen.blit(Healthbar(player.health,
                                        player.spritesheet).image,(40,75))
-
-        
+            
+            if len(players)<=1:
+                print(players[0]+ " has won the match")
+                winner = player
+                run = False
+                break
+                
         #updates and draws all sprites
         allPlayers.update(allPlatforms, allAttacks)
         allAttacks.update(allPlatforms)
@@ -1026,150 +1018,104 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
         pygame.display.flip()
 
         clock.tick(60)
+    return endLoop(winner)
 
+def startLoop():
+    allAttacks = pygame.sprite.Group()
 
-allAttacks = pygame.sprite.Group()
-
-allPlayers = pygame.sprite.Group()
-
-
-
-#Ayaan you there
-#Yup
-#im heere
-#have to eat soon though
-allPlatforms = pygame.sprite.Group()
-allPlatforms.add(Platform(100, 550))
-allPlatforms.add(Platform(300, 400))
-allPlatforms.add(Platform(500, 250))
-allPlatforms.add(Platform(700, 400))
-allPlatforms.add(Platform(900, 550))
+    allPlayers = pygame.sprite.Group()
 
 
 
-bg = pygame.image.load("./Assets/background.jpg")
+    #Ayaan you there
+    #Yup
+    #im heere
+    #have to eat soon though
+    allPlatforms = pygame.sprite.Group()
+    allPlatforms.add(Platform(100, 550))
+    allPlatforms.add(Platform(300, 400))
+    allPlatforms.add(Platform(500, 250))
+    allPlatforms.add(Platform(700, 400))
+    allPlatforms.add(Platform(900, 550))
 
-allButtons, buttonlistBlue, buttonlistRed = startscreenCreate(
-    WIDTH - 200, HEIGHT - 200, 200, 50)
-startButton = Button("Start", ((0, 255, 0)), WIDTH / 2, HEIGHT - 100, 200, 50)
 
-fighterDict = {
-    "Gunslinger": Fighter1,
-    "Knight": Fighter2,
-    "Skelebomber": Fighter3,
-    "Dynaminer": Fighter4,
-    "Alchemist": Fighter5
-}
 
-startplay = False
-while not startplay:
+    bg = pygame.image.load("./Assets/background.jpg")
 
-    screen.fill((255, 255, 255))
 
-    text("Ultimate Street Kombat", WIDTH/2, 100)
-    for event in pygame.event.get():
-        #quit program
-        if event.type == pygame.QUIT:
-            run = False
+    allButtons, buttonlistBlue, buttonlistRed = startscreenCreate(
+        WIDTH - 200, HEIGHT - 200, 200, 50)
+    startButton = Button("Ready Up", ((0, 255, 0)), WIDTH / 2, 400, 200, 50)
 
-    for button in buttonlistBlue:
-        if button.click(
+    fighterDict = {
+        "Gunslinger": Fighter1,
+        "Knight": Fighter2,
+        "Skelebomber": Fighter3,
+        "Dynaminer": Fighter4,
+        "Alchemist": Fighter5
+    }
+    statusRed = None
+    statusBlue = None
+    startplay = False
+    while not startplay:
+
+        screen.fill((255, 255, 255))
+        
+        screen.blit(bg, (0, 0))
+        text("Ultimate Street Kombat", WIDTH/2, 50,50,"white")
+        for event in pygame.event.get():
+            #quit program
+            if event.type == pygame.QUIT:
+                run = False
+
+        for button in buttonlistBlue:
+            if button.update(
+                    pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
+                statusBlue = button.text
+                
+            if statusBlue == button.text:
+                button.bg = button.color
+            else:
+                button.bg = (225,225,225)
+        
+        text("PLAYER 1 SELECT", 150, 100,32,"white")
+
+        for button in buttonlistRed:
+
+            if button.update(
+                    pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
+                statusRed = button.text
+                
+            if statusRed == button.text:
+                button.bg = button.color
+            else:
+                button.bg = (225,225,225)
+        text("PLAYER 2 SELECT", WIDTH-150, 100,32,"white")
+
+        
+            
+
+        
+
+        if startButton.update(
                 pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-            statusBlue = button.text
-            print("blue")
-        if statusBlue == button.text:
-            button.bg = button.color
-        else:
-            button.bg = (225,225,225)
-    
-    text(statusBlue, 200, 100)
+            startplay = True
 
-    for button in buttonlistRed:
+        pygame.display.flip()
 
-        if button.click(
-                pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-            statusRed = button.text
-            print("red")
-        if statusRed == button.text:
-            button.bg = button.color
-        else:
-            button.bg = (225,225,225)
-    text(statusRed, 800, 100)
+    if startplay and statusBlue and statusRed:
+        players = []
+        allPlayers.add(fighterDict[statusBlue]((900, 400), "Blue","player1"))
+        players.append("player1")
+       
+        allPlayers.add(fighterDict[statusRed]((100, 400), "Red","player2"))
+        players.append("player2")
 
-    for button in allButtons:
-        button.update()
-        screen.blit(button.image, button.rect)
-
-    screen.blit(startButton.image, startButton.rect)
-
-    if startButton.click(
-            pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-        startplay = True
-
-    pygame.display.flip()
-
-if startplay and statusBlue and statusRed:
-    players = []
-    allPlayers.add(fighterDict[statusBlue]((800, 500), "Blue","player1"))
-    players.append("player1")
-   
-    allPlayers.add(fighterDict[statusRed]((200, 500), "Red","player2"))
-    players.append("player2")
-    
-
-    gameLoop(bg, allPlayers,allPlatforms,allAttacks,players )
-"""
-        for person in type1list:
-            for bullet in person.bullets:
-                for name, player in dict(allPlayers).items():
-                    if player != person and player.rect.colliderect(
-                            bullet.rect):
-                        player.hit(bullet.damage, bullet.knockback, name)
-                        bullet.kill()
-                        bullet.dead = True
-
-        for person in type2list:
-            for name, player in dict(allPlayers).items():
-                if player != person and person.sword is not None and person.sword.rect.colliderect(
-                        player.rect):
-                    player.hit(person.sword.damage, person.sword.knockback,
-                               name)
-
-        for person in type3list:
-            for explosion in person.explosions:
-                for name, player in dict(allPlayers).items():
-                    if player != person and player.rect.colliderect(
-                            explosion.rect):
-                        player.hit(explosion.damage, explosion.knockback, name)
-
-        for person in type3list:
-            for pellet in person.pellets:
-                for name, player in dict(allPlayers).items():
-                    if player != person and player.rect.colliderect(
-                            pellet.rect):
-                        pellet.kill()
-                        pellet.dead = True
-
-        for person in type4list:
-            if person.explosion is not None:
-                for name, player in dict(allPlayers).items():
-                    if player != person and player.rect.colliderect(
-                            person.explosion):
-                        player.hit(person.explosion.damage,
-                                   person.explosion.knockback, name)
-
-        for person in type5list:
-            for potion in person.potions:
-                for name, player in dict(allPlayers).items():
-                    if player != person and player.rect.colliderect(potion):
-                        player.hit(potion.damage, potion.knockback, name)
-                        potion.kill()
-                        potion.dead = True
-
-        for person in type5list:
-            for poison in person.poisons:
-                for name, player in dict(allPlayers).items():
-                    if player != person and player.rect.colliderect(poison):
-                        player.hit(poison.damage, poison.knockback, name)
-
-"""
+        screen.blit(bg, (0, 0))
+        readyScreen()
+        
+        return gameLoop(bg, allPlayers,allPlatforms,allAttacks,players )
+play = True
+while play:
+    play = startLoop()
+pygame.quit()
