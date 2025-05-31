@@ -12,10 +12,17 @@ WIDTH = 1000
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen.fill((255, 255, 255))
 clock = pygame.time.Clock()
-
-
+SHOT = pygame.mixer.Sound('./Assets/shot_sound.mp3')
+SWING = pygame.mixer.Sound('./Assets/swing_sound.wav')
+EXPLOSION = pygame.mixer.Sound('./Assets/explosion_sound.mp3')
+CRACK = pygame.mixer.Sound('./Assets/crack_sound.mp3')
+HIT = pygame.mixer.Sound('./Assets/hit_sound.mp3')
+JUMP = pygame.mixer.Sound('./Assets/jump_sound.mp3')
+WIN = pygame.mixer.Sound('./Assets/win_sound.mp3')
 
 #defining fighter1
+#Here we are getting the paths of the images\
+#Through an input of name
 def pathfind(name):
     return ("./Assets/"+name+".png")
 
@@ -35,6 +42,7 @@ class Fighter(pygame.sprite.Sprite):
         self.id = id
         self.framesLeft = []
         self.framesRight = []
+        #Using a spritesheet
         for i in range(self.spritesheet.get_width() // 30):
             self.framesLeft.append(
                 self.spritesheet.subsurface((i * 30, 0, 30, 45)))
@@ -45,6 +53,7 @@ class Fighter(pygame.sprite.Sprite):
                 pygame.transform.flip(self.framesLeft[j], True, False))
         self.image = self.framesLeft[0]
         self.frame = 0
+        #making rectangle for collision
         self.rect = self.image.get_rect()
         self.rect.center = pos
         self.side = "left"
@@ -67,10 +76,13 @@ class Fighter(pygame.sprite.Sprite):
         self.regenTimer = 0
     #movement functions
 
+    #Handles damage taken + invincibility
+    #to prevent spamming
     def hit(self, damage, knockback):
         
         self.regenTimer = 0
         if not self.invincible:
+            pygame.mixer.Channel(4).play(HIT)
             self.health -= damage
             print(self.id + ": " + str(self.health))
             if self.health <= 0:
@@ -106,9 +118,13 @@ class Fighter(pygame.sprite.Sprite):
         #decreases y speed to make the fighter jump
         if self.grounded:
             self.ySpeed -= self.jumpHeight
+            pygame.mixer.Channel(5).play(JUMP)
 
     #handles physics interactions
 
+    #Update function that is common for all fighters
+    #While also creating a regeneration of health
+    #As the user is not hit
     def baseUpdate(self, allPlatforms):
         self.frame += 1
         self.regenTimer +=1
@@ -163,6 +179,9 @@ class Fighter(pygame.sprite.Sprite):
             self.rect.left = 0
         return returnvalue
 
+    #Doing a similar concept of collide Boundaries
+    #but instead with the platforms to prevent
+    #it from going through them
     def collidePlatform(self, allPlatforms):
         returnvalue = False
         for platform in allPlatforms:
@@ -184,7 +203,7 @@ class Fighter(pygame.sprite.Sprite):
 
         return returnvalue
 
-
+#This is our first fighter
 class Fighter1(Fighter):
 
     def __init__(self, pos, color,id):
@@ -203,11 +222,16 @@ class Fighter1(Fighter):
     #movement functions
 
     def attack(self, allSprites):
+        #Here we are setting a flag and
+        #if it is true then we create a new Bullet
         if self.shootFlag:
+            #The bullet has the coordinates set to where the position
+            #of the character is
             self.bullets.append(Bullet(self.rect.center, self.side,self))
             allSprites.add(self.bullets[-1])
             self.timer = 0
             self.shootFlag = False
+            
 
     #handles physics interactions
     def update(self, allPlatforms, allAttacks):
@@ -249,23 +273,18 @@ class Fighter2(Fighter):
     #movement functions
 
     def attack(self, allSprites):
+        #Here we are checking if there is a current sword
+        #being executed or not
         if self.sword is None or self.sword.dead:
+            #If this is so, then we create a new Sword class
+            #with coordinates of player
             self.sword = Sword(self.rect.center, self.side,self)
             allSprites.add(self.sword)
+            
 
     #handles physics interactions
     def update(self, allPlatforms, allAttacks):
-        #applies current x and y speed to the fighter to make it move
-
-        #this line of code is mostly to make the game look better
-        #rather than suddenly slowing down movement, this makes it smoothly stop
-
-        #this applies gravity to the fighter and sets its state
-        #only runs if it is not touching the ground
-
-        #this runs if the figher is touching the ground
-        #makes sure that the fighter doesn't clip through the floor
-
+        
         if self.sword is not None:
             self.sword.position(self.rect.center)
 
@@ -274,7 +293,8 @@ class Fighter2(Fighter):
 
         self.baseUpdate(allPlatforms)
 
-
+#Notice that all of the features of attacking go under the same
+#name of "attack" in all of the Fighter classes
 class Fighter3(Fighter):
 
     def __init__(self, pos, color,id):
@@ -298,27 +318,20 @@ class Fighter3(Fighter):
     #movement functions
 
     def attack(self, allSprites):
+        #Here we are checking if the Bomb
         if self.dropBomb:
             self.bombs.append(Bomb(self.rect.center,self))
             allSprites.add(self.bombs[-1])
             self.timer = 0
             self.dropBomb = False
+            
 
     def update(self, allPlatforms, allAttacks):
         self.timer += 1
         if self.timer >= self.cooldown:
             self.dropBomb = True
-        #applies current x and y speed to the fighter to make it move
-
-        #this line of code is mostly to make the game look better
-        #rather than suddenly slowing down movement, this makes it smoothly stop
-
-        #this applies gravity to the fighter and sets its state
-        #only runs if it is not touching the ground
-
-        #this runs if the figher is touching the ground
-        #makes sure that the fighter doesn't clip through the floor
-
+        
+        # handles the bombs
         for bomb in self.bombs:
             if bomb.dead:
 
@@ -335,7 +348,7 @@ class Fighter3(Fighter):
                 
 
                 
-                
+        #handles pellets and explosions
 
         for pellet in self.pellets:
             if pellet.dead:
@@ -366,8 +379,8 @@ class Fighter4(Fighter):
 
         self.health = 100
 
-    #movement functions
-
+    #attack function
+    
     def attack(self, allSprites):
         if self.bomb is None and self.dropBomb:
             self.bomb = RemoteBomb(self.rect.center,self)
@@ -384,15 +397,7 @@ class Fighter4(Fighter):
         self.timer += 1
         if self.timer >= self.cooldown:
             self.dropBomb = True
-        #applies current x and y speed to the fighter to make it move
-
-        #this line of code is mostly to make the game look better
-        #rather than suddenly slowing down movement, this makes it smoothly stop
-
-        #this applies gravity to the fighter and sets its state
-        #only runs if it is not touching the ground
-
-        #this runs if the figher is touching the ground
+        # handles the bomb
 
         if self.bomb is not None and self.bomb.dead:
 
@@ -423,7 +428,7 @@ class Fighter5(Fighter):
         self.accel = 1
 
         self.health = 100
-
+    #attack function
     def attack(self, allSprites):
         if self.dropPotion:
             self.potions.append(Potion(self.side, self.rect.center,self))
@@ -436,17 +441,8 @@ class Fighter5(Fighter):
         self.timer += 1
         if self.timer >= self.cooldown:
             self.dropPotion = True
-        #applies current x and y speed to the fighter to make it move
-
-        #this line of code is mostly to make the game look better
-        #rather than suddenly slowing down movement, this makes it smoothly stop
-
-        #this applies gravity to the fighter and sets its state
-        #only runs if it is not touching the ground
-
-        #this runs if the figher is touching the ground
-        #makes sure that the fighter doesn't clip through the floor
-
+        
+        #handles the potions and poisons
         for potion in self.potions:
             if potion.dead:
 
@@ -461,12 +457,15 @@ class Fighter5(Fighter):
 
         self.baseUpdate(allPlatforms)
 
-
+#Potion that alchemist throws
 class Potion(pygame.sprite.Sprite):
 
     def __init__(self, side, pos,player):
         pygame.sprite.Sprite.__init__(self)
         self.spritesheet = pygame.image.load(pathfind("potion"))
+
+        #all frame rect and hitbox handling is same as before 
+        
         self.frames = []
         for i in range(8):
             self.frames.append(self.spritesheet.subsurface(
@@ -483,17 +482,13 @@ class Potion(pygame.sprite.Sprite):
         self.dead = False
         self.lifetime = 600
         self.rect.center = pos
-        self.damage = 7
+        self.damage = 10
         self.knockback = (0, 0)
         self.frame = 0
         self.mask  = pygame.mask.from_surface(self.image)
+        #which player owns the attack
         self.player = player
-    #def damageDealed(self):
-    #   self.damage = 10
-    #def knockbackDealed(self):
-    #   self.knockback = 10
-    #def positioning(self):
-    #   self.rect.move_ip(self.speed, 0)
+    #updates the animation and checks collision and moves attack
     def update(self, allPlatforms):
         self.frame += 1
         self.image = self.frames[((self.frame // 3) % 8)]
@@ -503,15 +498,18 @@ class Potion(pygame.sprite.Sprite):
         if (self.timer >= self.lifetime):
             self.kill()
             self.dead = True
+            
         if self.rect.right > WIDTH or self.rect.left < 0:
             self.kill()
             self.dead = True
+            
         for platform in allPlatforms:
             if self.rect.colliderect(platform):
                 self.kill()
                 self.dead = True
+                
 
-
+#the poison splat that comes from the potion bottle breaking
 class Poison(pygame.sprite.Sprite):
 
     def __init__(self, pos,player):
@@ -521,21 +519,18 @@ class Poison(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = pos
         self.mask  = pygame.mask.from_surface(self.image)
-        #self.rangeKill = False
-        #self.poisonDone = False
-        #self.poisoncooldown = 30
+        
         self.dead = False
         self.timer = 0
         self.lifetime = 500
         self.damage = 1
         self.knockback = (0, 0)
         self.player = player
+        pygame.mixer.Channel(0).play(CRACK)
     
-
     def update(self, filler1):
         self.timer += 1
-        #if self.timer >= 30:
-        #self.rangeKill = True
+        
         if self.timer >= self.lifetime:
             self.timer = 0
             self.kill()
@@ -563,7 +558,7 @@ class Bullet(pygame.sprite.Sprite):
         self.dead = False
         self.player = player
         self.damage = 8
-
+        pygame.mixer.Channel(0).play(SHOT)
     def update(self, allPlatforms):
         self.rect.x += self.speed
         if self.rect.right > WIDTH or self.rect.left < 0:
@@ -648,6 +643,7 @@ class Explosion(pygame.sprite.Sprite):
         self.frame = 0
         self.knockback = (0, -(self.damage))
         self.mask  = pygame.mask.from_surface(self.image)
+        pygame.mixer.Channel(2).play(EXPLOSION)
     def update(self, filler1):
         self.image = self.frames[self.frame // 2]
         self.frame += 1
@@ -737,7 +733,7 @@ class Sword(pygame.sprite.Sprite):
         self.dead = False
         self.damage = 17
         self.frame = 0
-
+        pygame.mixer.Channel(1).play(SWING)
     def update(self, filler1):
         self.image = self.frames[self.frame // 2]
         self.frame += 1
@@ -855,10 +851,10 @@ def startscreenCreate(x, y, width, height):
             text = "Alchemist"
 
         buttonlistBlue.append(
-            Button(text, ((0, 0, 255)), 150, (i * 100) + 200, width, height))
+            Button(text, ((0, 0, 255)), WIDTH-150, (i * 100) + 200, width, height))
         allButtons.append(buttonlistBlue[-1])
         buttonlistRed.append(
-            Button(text, ((255, 0, 0)), WIDTH-150, (i * 100) + 200, width, height))
+            Button(text, ((255, 0, 0)), 150, (i * 100) + 200, width, height))
         allButtons.append(buttonlistRed[-1])
 
     return allButtons, buttonlistBlue, buttonlistRed
@@ -885,34 +881,88 @@ def readyScreen():
             break
         pygame.display.flip()
 def endLoop(player):
+    
     end = False
     restartButton = Button("Restart","green",500,450,200,50)
     exitButton = Button("Exit","red",500,550,200,50)
+    time.sleep(1)
+    pygame.mixer.Channel(6).play(WIN)
     while not end:
         for event in pygame.event.get():
             #quit program
             if event.type == pygame.QUIT:
                 run = False
-        text(player.id+ " has won the match!",WIDTH/2,HEIGHT/2,40,"white")
+        text(player+ " has won the match!",WIDTH/2,HEIGHT/2,40,"white")
         if restartButton.update(
                 pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
+            environmentalmessageScreen()
             return True
         if exitButton.update(
                 pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
+            environmentalmessageScreen()
             return False
         pygame.display.flip()
 
+environmentList = [
+ "Around 27,000 trees are cut down each day "
+ ,"Humans use only 1% of all available water"
+
+,"78% of marine mammals are at risk of choking on plastic"
+
+,"Americans throw away 25 trillion Styrofoam cups every year"
+
+,"Fungi play a highly vital role in the environment"
+,"All ants weigh more than all humans"
+
+,"Every three months, Americans throw enough aluminum in the landfill"+
+ "s to build our nation\’s entire commercial air fleet."
+
+,"On average, one supermarket goes through 60 million paper bags each year."
+
+,"A glass bottle can take up to 1 million years to decompose."
+
+,"Recycling one glass bottle saves enough energy to po"+
+ "wer a normal light bulb for about four hours. "
+
+,"The world\’s oldest trees are 4,600 year old Bristlecone pines in the USA."
+
+,"If you walk a mile along an average US highway, you will see, on av"+
+ "erage, about 1,457 pieces of litter. "
+
+,"Paper from trees can be recycled 6 times"
+
+,"There is a giant floating patch of garbage in the pacific"
+ ]
+def environmentalmessageScreen():
+    screen.fill("black")
+    messageTimer = 6
+    timer = 0
+    for event in pygame.event.get():
+        #quit program
+        if event.type == pygame.QUIT:
+            run = False
+    text(environmentList[random.randint(0,len(environmentList)-1)], WIDTH/2,(HEIGHT/2)+100, 20,"green")    
+    while messageTimer > timer:
+        for event in pygame.event.get():
+        #quit program
+            if event.type == pygame.QUIT:
+                run = False
+        text("Did you Know?", WIDTH/2,(HEIGHT/2),40,"green")
+        timer += 1
+        pygame.display.flip()
+        time.sleep(1)
+    
+        
+        
 def text(textmessage, x, y,size,color):
     font = pygame.font.Font('./Assets/RobotoSlab-Bold.ttf', size)
     img = font.render(textmessage, True, color)
     rect= img.get_rect()
     rect.center = (x,y)
-    screen.blit(img,rect )
+    screen.blit(img,rect)
 
 
-#making player1
 
-#i moved this code to a lower place to make it more organized
 
 
 #INSIDE OF THE GAME LOOP
@@ -932,8 +982,10 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
         allAttacks.draw(screen)
         allPlatforms.draw(screen)
         text(str(5-i),500,350,50,"white")
-        time.sleep(1)
         pygame.display.flip()
+        time.sleep(1)
+    pygame.mixer.music.load('./Assets/bgmusic.mp3')
+    pygame.mixer.music.play(-1)
     while run:
         screen.blit(bg, (0, 0))
 
@@ -948,7 +1000,7 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
 
         
         for player in allPlayers:
-            if player.id == "player1":
+            if player.id == "player2":
                 if keys[pygame.K_LEFT]:
                     player.moveLeft()
                 if keys[pygame.K_RIGHT]:
@@ -957,7 +1009,7 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
                     player.jump()
                 if keys[pygame.K_DOWN]:
                     player.attack(allAttacks)
-            if player.id ==  "player2":
+            if player.id ==  "player1":
                 if keys[pygame.K_a]:
                     player.moveLeft()
                 if keys[pygame.K_d]:
@@ -999,7 +1051,7 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
             
             if len(players)<=1:
                 print(players[0]+ " has won the match")
-                winner = player
+                winner = players[0]
                 run = False
                 break
                 
@@ -1018,7 +1070,9 @@ def gameLoop(bg, allPlayers, allPlatforms, allAttacks,players):
         pygame.display.flip()
 
         clock.tick(60)
+    pygame.mixer.music.stop()
     return endLoop(winner)
+        
 
 def startLoop():
     allAttacks = pygame.sprite.Group()
@@ -1027,10 +1081,6 @@ def startLoop():
 
 
 
-    #Ayaan you there
-    #Yup
-    #im heere
-    #have to eat soon though
     allPlatforms = pygame.sprite.Group()
     allPlatforms.add(Platform(100, 550))
     allPlatforms.add(Platform(300, 400))
@@ -1057,7 +1107,7 @@ def startLoop():
     statusRed = None
     statusBlue = None
     startplay = False
-    while not startplay:
+    while True:
 
         screen.fill((255, 255, 255))
         
@@ -1099,22 +1149,23 @@ def startLoop():
 
         if startButton.update(
                 pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-            startplay = True
-
-        pygame.display.flip()
-
-    if startplay and statusBlue and statusRed:
-        players = []
-        allPlayers.add(fighterDict[statusBlue]((900, 400), "Blue","player1"))
-        players.append("player1")
+            
+            if statusBlue != None and statusRed != None:
+                print("hello")
+                players = []
+                allPlayers.add(fighterDict[statusBlue]((900, 400), "Blue","player2"))
+                players.append("player2")
        
-        allPlayers.add(fighterDict[statusRed]((100, 400), "Red","player2"))
-        players.append("player2")
+                allPlayers.add(fighterDict[statusRed]((100, 400), "Red","player1"))
+                players.append("player1")
 
-        screen.blit(bg, (0, 0))
-        readyScreen()
-        
-        return gameLoop(bg, allPlayers,allPlatforms,allAttacks,players )
+                screen.blit(bg, (0, 0))
+                readyScreen()
+
+                return gameLoop(bg, allPlayers,allPlatforms,allAttacks,players)
+        pygame.display.flip()
+    
+    
 play = True
 while play:
     play = startLoop()
